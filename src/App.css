@@ -1,3 +1,4 @@
+/* src/App.css */
 .app {
   font-family: Arial, sans-serif;
   max-width: 600px;
@@ -42,27 +43,12 @@ header p {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.add-form h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 16px;
-  color: #444;
-}
-
 .form-row {
   display: flex;
   gap: 8px;
 }
 
 .form-row input[type="text"] {
-  flex: 3;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-row input[type="number"] {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -84,11 +70,11 @@ header p {
   background-color: #43a047;
 }
 
-.study-list {
+.task-list {
   margin-bottom: 24px;
 }
 
-.study-list h3 {
+.task-list h3 {
   margin-top: 0;
   margin-bottom: 12px;
   font-size: 16px;
@@ -103,7 +89,7 @@ header p {
   border-radius: 6px;
 }
 
-.study-list ul {
+.task-list ul {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -113,7 +99,7 @@ header p {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.study-list li {
+.task-list li {
   padding: 12px 16px;
   border-bottom: 1px solid #eee;
   display: flex;
@@ -121,65 +107,37 @@ header p {
   align-items: center;
 }
 
-.study-list li:last-child {
+.task-list li:last-child {
   border-bottom: none;
 }
 
-.study-list li.completed {
+.task-list li.completed {
   background-color: #f8f8f8;
 }
 
-.study-list li.completed .subject {
+.task-list li.completed .task-text {
   text-decoration: line-through;
   color: #888;
 }
 
-.study-list label {
+.task-list label {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
 }
 
-.subject {
+.task-text {
   flex: 1;
 }
 
-.hours {
-  color: #666;
-  font-size: 14px;
-}
-
-.remove {
+.delete-btn {
   background: none;
   border: none;
   color: #f44336;
   cursor: pointer;
   font-size: 16px;
   padding: 4px 8px;
-}
-
-.actions {
-  text-align: right;
-}
-
-.save-button {
-  padding: 10px 20px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.save-button:hover {
-  background-color: #1e88e5;
-}
-
-.save-button:disabled {
-  background-color: #90caf9;
-  cursor: not-allowed;
 }
 
 .status-message {
@@ -191,6 +149,17 @@ header p {
   color: #2e7d32;
 }
 
+.saving-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #333;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .form-row {
@@ -198,7 +167,7 @@ header p {
   }
   
   .form-row input[type="text"],
-  .form-row input[type="number"] {
+  .form-row button {
     width: 100%;
   }
 }
