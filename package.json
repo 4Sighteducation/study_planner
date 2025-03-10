@@ -40,4 +40,7 @@
   "engines": {
     "node": "16.x"
   }
+  "scripts": {
+  "serve": "serve -s build -l $PORT"
+  }
 }
