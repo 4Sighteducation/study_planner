@@ -5,9 +5,8 @@ function App() {
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [studyItems, setStudyItems] = useState([]);
-  const [newSubject, setNewSubject] = useState('');
-  const [newHours, setNewHours] = useState(1);
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState('');
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   
@@ -18,7 +17,7 @@ function App() {
     // Signal to parent that we're ready for auth info
     if (window.parent !== window) {
       console.log('App loaded - sending ready message to parent');
-      window.parent.postMessage({ type: 'STUDY_PLANNER_READY' }, '*');
+      window.parent.postMessage({ type: 'APP_READY' }, '*');
     } else {
       // For standalone testing
       setLoading(false);
@@ -30,81 +29,89 @@ function App() {
   }, []);
   
   const handleMessage = (event) => {
-    console.log('Message received:', event.data);
+    console.log('Message received from parent:', event.data);
     
     if (event.data && event.data.type === 'KNACK_USER_INFO') {
       setAuth(event.data.data);
+      
+      // If user data was included, load it
+      if (event.data.data && event.data.data.userData) {
+        setTasks(event.data.data.userData.tasks || []);
+      }
+      
       setLoading(false);
       
       // Confirm receipt of auth info
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'AUTH_CONFIRMED' }, '*');
-      }
-      
-      // Load user data if they sent any
-      if (event.data.data && event.data.data.userData) {
-        const userData = event.data.data.userData;
-        if (userData.studyItems) {
-          setStudyItems(userData.studyItems);
-        }
+      window.parent.postMessage({ type: 'AUTH_CONFIRMED' }, '*');
+    } else if (event.data && event.data.type === 'LOAD_SAVED_DATA') {
+      if (event.data.data && event.data.data.tasks) {
+        setTasks(event.data.data.tasks);
+        setStatusMessage('Loaded saved data');
+        setTimeout(() => setStatusMessage(''), 2000);
       }
     }
   };
   
-  const addStudyItem = () => {
-    if (!newSubject) {
-      setStatusMessage('Please enter a subject');
+  const addTask = () => {
+    if (!newTask.trim()) {
+      setStatusMessage('Please enter a task');
       return;
     }
     
-    const newItem = {
+    const updatedTasks = [...tasks, {
       id: Date.now().toString(),
-      subject: newSubject,
-      hours: newHours,
-      completed: false
-    };
+      text: newTask.trim(),
+      completed: false,
+      date: new Date().toISOString()
+    }];
     
-    const updatedItems = [...studyItems, newItem];
-    setStudyItems(updatedItems);
-    setNewSubject('');
-    setNewHours(1);
-    setStatusMessage('Item added');
+    setTasks(updatedTasks);
+    setNewTask('');
+    setStatusMessage('Task added');
+    
+    // Save to parent Knack app
+    saveData(updatedTasks);
   };
   
-  const removeItem = (id) => {
-    setStudyItems(studyItems.filter(item => item.id !== id));
-    setStatusMessage('Item removed');
+  const toggleTask = (id) => {
+    const updatedTasks = tasks.map(task => 
+      task.id === id ? { ...task, completed: !task.completed } : task
+    );
+    
+    setTasks(updatedTasks);
+    saveData(updatedTasks);
   };
   
-  const toggleComplete = (id) => {
-    setStudyItems(studyItems.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+  const deleteTask = (id) => {
+    const updatedTasks = tasks.filter(task => task.id !== id);
+    setTasks(updatedTasks);
+    saveData(updatedTasks);
+    setStatusMessage('Task deleted');
   };
   
-  const saveData = () => {
+  const saveData = (taskData) => {
     setSaving(true);
-    setStatusMessage('Saving...');
     
     // Send data to parent window for saving
     if (window.parent !== window && auth) {
       window.parent.postMessage({
-        type: 'SAVE_STUDY_DATA',
-        data: { studyItems }
+        type: 'SAVE_DATA',
+        data: { tasks: taskData }
       }, '*');
       
-      // Simulate response
       setTimeout(() => {
         setSaving(false);
         setStatusMessage('Saved successfully!');
-      }, 1000);
+        setTimeout(() => setStatusMessage(''), 2000);
+      }, 500);
     } else {
       // For standalone testing
-      console.log('Would save:', { studyItems });
+      console.log('Would save:', { tasks: taskData });
       setTimeout(() => {
         setSaving(false);
         setStatusMessage('Saved successfully! (Test mode)');
-      }, 1000);
+        setTimeout(() => setStatusMessage(''), 2000);
+      }, 500);
     }
   };
   
@@ -129,69 +136,55 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h2>Study Planner</h2>
+        <h2>Study Task Planner</h2>
         {auth && <p>User: {auth.email || 'Test Mode'}</p>}
       </header>
       
       <div className="add-form">
-        <h3>Add Study Task</h3>
         <div className="form-row">
           <input
             type="text"
-            placeholder="Subject"
-            value={newSubject}
-            onChange={(e) => setNewSubject(e.target.value)}
+            placeholder="Add a new study task"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addTask()}
           />
-          <input
-            type="number"
-            min="0.5"
-            step="0.5"
-            value={newHours}
-            onChange={(e) => setNewHours(parseFloat(e.target.value))}
-          />
-          <button onClick={addStudyItem}>Add</button>
+          <button onClick={addTask}>Add</button>
         </div>
       </div>
       
-      <div className="study-list">
-        <h3>Your Study Plan</h3>
-        {studyItems.length === 0 ? (
-          <p className="empty-list">No items yet. Add your first study task above.</p>
+      <div className="task-list">
+        <h3>Your Study Tasks</h3>
+        {tasks.length === 0 ? (
+          <p className="empty-list">No tasks yet. Add your first study task above.</p>
         ) : (
           <ul>
-            {studyItems.map(item => (
-              <li key={item.id} className={item.completed ? 'completed' : ''}>
+            {tasks.map(task => (
+              <li key={task.id} className={task.completed ? 'completed' : ''}>
                 <label>
                   <input
                     type="checkbox"
-                    checked={item.completed}
-                    onChange={() => toggleComplete(item.id)}
+                    checked={task.completed}
+                    onChange={() => toggleTask(task.id)}
                   />
-                  <span className="subject">{item.subject}</span>
-                  <span className="hours">{item.hours} hour{item.hours !== 1 ? 's' : ''}</span>
+                  <span className="task-text">{task.text}</span>
                 </label>
-                <button className="remove" onClick={() => removeItem(item.id)}>✕</button>
+                <button className="delete-btn" onClick={() => deleteTask(task.id)}>✕</button>
               </li>
             ))}
           </ul>
         )}
       </div>
       
-      {studyItems.length > 0 && (
-        <div className="actions">
-          <button 
-            className="save-button" 
-            onClick={saveData}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Study Plan'}
-          </button>
-        </div>
-      )}
-      
       {statusMessage && (
         <div className="status-message">
           {statusMessage}
+        </div>
+      )}
+      
+      {saving && (
+        <div className="saving-indicator">
+          Saving...
         </div>
       )}
     </div>
